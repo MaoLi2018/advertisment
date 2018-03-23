@@ -23,12 +23,14 @@ NUMERIC_COLS = [
 ]
 
 IGNORE_COLS = [
+    #target
+    'is_trade',
     #keys
-    'instance_id','user_id','context_id','is_trade','shop_id','item_id',
+    'instance_id','user_id','context_id',
     #time
-    'context_timestamp',
+    'context_timestamp','context_timestamp_day',
     #string category
-    'item_category_list','item_property_list','predict_category_property'
+    'item_category_list','predict_category_property'
     
 ]
 

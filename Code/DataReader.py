@@ -36,6 +36,8 @@ class FeatureDictionary(object):
         for col in df.columns:
             if col in self.ignore_cols:
                 continue
+            '''if col not in ['item_price_level','item_sales_level','shop_id']:
+                continue'''
             if col in self.numeric_cols:
                 # map to a single index
                 self.feat_dict[col] = tc
@@ -71,6 +73,10 @@ class DataParser(object):
         # dfv for feature value which can be either binary (1/0) or float (e.g., 10.24)
         dfv = dfi.copy()
         for col in dfi.columns:
+            '''if col not in ['item_price_level','item_sales_level','shop_id']:
+                dfi.drop(col, axis=1, inplace=True)
+                dfv.drop(col, axis=1, inplace=True)
+                continue'''
             if col in self.feat_dict.ignore_cols:
                 dfi.drop(col, axis=1, inplace=True)
                 dfv.drop(col, axis=1, inplace=True)
