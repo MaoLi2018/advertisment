@@ -11,11 +11,10 @@ RANDOM_SEED = 42
 
 # types of columns of the dataset dataframe
 CATEGORICAL_COLS = [
-    # 'ps_ind_02_cat', 'ps_ind_04_cat', 'ps_ind_05_cat',
-    # 'ps_car_01_cat', 'ps_car_02_cat', 'ps_car_03_cat',
-    # 'ps_car_04_cat', 'ps_car_05_cat', 'ps_car_06_cat',
-    # 'ps_car_07_cat', 'ps_car_08_cat', 'ps_car_09_cat',
-    # 'ps_car_10_cat', 'ps_car_11_cat',
+    'item_id', 'item_brand_id', 'item_city_id', 'item_price_level', 'item_sales_level',
+    'item_collected_level', 'item_pv_level', 'user_gender_id', 'user_occupation_id',
+    'user_age_level', 'user_star_level','context_page_id', 'hour', 'shop_id', 'shop_review_num_level', 'shop_star_level'
+    
 ]
 
 NUMERIC_COLS = [
