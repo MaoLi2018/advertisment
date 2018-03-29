@@ -13,7 +13,8 @@ RANDOM_SEED = 42
 CATEGORICAL_COLS = [
     'item_id', 'item_brand_id', 'item_city_id', 'item_price_level', 'item_sales_level',
     'item_collected_level', 'item_pv_level', 'user_gender_id', 'user_occupation_id',
-    'user_age_level', 'user_star_level','context_page_id', 'hour', 'shop_id', 'shop_review_num_level', 'shop_star_level'
+    'user_age_level', 'user_star_level','context_page_id', 'hour', 'shop_id', 'shop_review_num_level',
+    'shop_star_level','item_category_list_bin0','item_category_list_bin1','item_category_list_bin2'
     
 ]
 
@@ -27,9 +28,9 @@ IGNORE_COLS = [
     #keys
     'instance_id','user_id','context_id',
     #time
-    'context_timestamp','context_timestamp_day',
+    'context_timestamp','day','time'
     #string category
-    'item_category_list','predict_category_property'
+    'item_category_list','predict_category_property','item_property_list'
     
 ]
 
