@@ -1,0 +1,235 @@
+# ============================================================================
+# Copyright 2017 PPCredit. All Rights Reserved.
+#
+# Author: Lei CHEN
+# Versions: 0.1
+# Last Update Date: 2017-08-17
+#
+# ============================================================================
+import datetime as dt
+from numba import jit
+
+
+##############################################################################
+# Discretization #############################################################
+##############################################################################
+def Discretize(vlu, list_cat, greedy_f=False):
+    ''' FUNCTION: categorization
+
+        INPUT:
+            vlu: numeric value
+            list_cat: bucket
+
+        OUTPUT:
+            list of category
+    '''
+    if len(list_cat) == 0:
+        return set([str(vlu)])
+    cut_l = ['-Inf'] + [str(i) for i in list_cat if i < vlu]
+    cut_h = [str(i) for i in list_cat if i >= vlu] + ['Inf']
+    if greedy_f:
+        return set([i + '_' + j for i in cut_l for j in cut_h])
+    else:
+        return set([cut_l[-1] + '_' + cut_h[0]])
+
+
+def Discretization(rec, dict_cat, greedy_f=False):
+    ''' FUNCTION: Bounded logloss
+
+        INPUT:
+            rec: records in dictionary format
+            dict_cat: discretization map
+
+        OUTPUT:
+            categorical output in dictionary
+    '''
+    return (dict([(key, Discretize(rec[key], dict_cat[key], greedy_f)) for key in dict_cat]))
+
+
+def cat_str(rec, dict_cat, greedy_f=False):
+    ''' FUNCTION: Bounded logloss
+
+        INPUT:
+            rec: records in dictionary format
+            dict_cat: discretization map
+
+        OUTPUT:
+            categorical output in dictionary
+    '''
+    cat_tag = Discretization(rec, dict_cat, greedy_f=False)
+    flat_list = ';'.join([key + '_' + str(item) for key in cat_tag.keys() for item in cat_tag[key]])
+    return (flat_list)
+
+
+##############################################################################
+# Signal Calculation #########################################################
+##############################################################################
+@jit
+def _agg_df(df, grp_key, sum_var, cnt_var, stat_var):
+    ''' FUNCTION: categorization
+
+        INPUT:
+            vlu: numeric value
+            list_cat: bucket
+
+        OUTPUT:
+            list of category
+    '''
+    grouped = df.groupby(grp_key)
+    agg_sum = grouped[sum_var].agg('sum').reset_index().melt(id_vars=grp_key, value_vars=sum_var)
+    agg_sum['method'] = 'sum'
+    agg_uniq = grouped[cnt_var].agg('nunique').reset_index().melt(id_vars=grp_key, value_vars=cnt_var)
+    agg_uniq['method'] = 'cnt'
+    agg_max = grouped[stat_var].agg('max').reset_index().melt(id_vars=grp_key, value_vars=stat_var)
+    agg_max['method'] = 'max'
+    agg_min = grouped[stat_var].agg('min').reset_index().melt(id_vars=grp_key, value_vars=stat_var)
+    agg_min['method'] = 'min'
+
+    agg_mst = pd.concat([agg_sum, agg_uniq, agg_max, agg_min])
+    return (agg_mst)
+
+
+
+
+def _sig_calc(cdr_rec, key_var, TS_cat, dict_cat, num_var, sum_var, cnt_var, stat_var):
+    ''' FUNCTION: categorization
+
+        INPUT:
+            vlu: numeric value
+            list_cat: bucket
+agg_mst
+        OUTPUT:
+            list of category
+    '''
+    #cdr_rec['hour'] = cdr_rec.start_time.apply(lambda x: int(x[11:13]))
+    #cdr_rec['start_date'] = cdr_rec.start_time.apply(lambda x: dt.datetime.strptime(x[0:10], '%Y-%m-%d').date())
+    #cdr_rec['anchor_date'] = cdr_rec.auditingdate.apply(lambda x: dt.datetime.strptime(x[0:10], '%Y-%m-%d').date())
+    #cdr_rec['dow'] = cdr_rec.start_date.apply(lambda x: x.weekday() + 1)
+    #cdr_rec['cnt_rec'] = 1
+    #cdr_rec['days_gap'] = cdr_rec[['start_date', 'anchor_date']].apply(lambda x: (x[1] - x[0]).days, axis=1)
+
+    # categorization
+    cdr_dict = cdr_rec.to_dict(orient='records')
+    cdr_dict = [dict(list(x.items()) + [('TS', '~'.join(list(Discretization(x, TS_cat).values())[0]))] + [
+        ('cat_str', cat_str(x, dict_cat))]) for x in cdr_dict]
+    cdr_rec = pd.DataFrame(cdr_dict).reset_index()
+    # one to many
+    cat_driver = pd.concat([pd.Series(row['index'], row['cat_str'].split(';'))
+                            for _, row in cdr_rec.iterrows()]).reset_index()
+    cat_driver.columns = ['cat', 'index']
+    cdr_rec_m = pd.merge(cdr_rec, cat_driver, on='index', how='inner')
+    # Aggregation
+    agg_mst_m = _agg_df(cdr_rec_m, [key_var, 'TS', 'cat'], sum_var, cnt_var, stat_var)
+    agg_mst_m['var_name'] = agg_mst_m[['method', 'variable', 'cat']].apply(
+        lambda x: x[0] + '_' + x[1] + '_cat_' + str(x[2]), axis=1)
+    agg_mst_m['key'] = agg_mst_m[[key_var, 'TS']].apply(lambda x: '{0}:{1}'.format(x[0], x[1]), axis=1)
+    agg_df_m = agg_mst_m.pivot(index='key', columns='var_name', values='value').reset_index()
+
+    agg_mst = _agg_df(cdr_rec, [key_var, 'TS'], sum_var, cnt_var, stat_var)
+    agg_mst['var_name'] = agg_mst[['method', 'variable']].apply(lambda x: x[0] + '_' + x[1] + '_cat_total_all', axis=1)
+    agg_mst['key'] = agg_mst[[key_var, 'TS']].apply(lambda x: '{0}:{1}'.format(x[0], x[1]), axis=1)
+    agg_df = agg_mst.pivot(index='key', columns='var_name', values='value').reset_index()
+
+    agg_df = pd.merge(agg_df, agg_df_m, on='key', how='left')
+
+    sig_ratio = [sig for sig in agg_df.columns if (('sum_' in sig) or ('cnt_' in sig)) and ('cat_total_all' not in sig)]
+    for sig in sig_ratio:
+        agg_df['rto_' + sig] = agg_df[[sig, sig.split('cat')[0] + 'cat_total_all']].apply(lambda x: (x[0] + 0.0) / x[1],
+                                                                                          axis=1)
+    # Aggregation without TS
+    agg_mst_m = _agg_df(cdr_rec_m, [key_var, 'cat'], sum_var, cnt_var, stat_var)
+    agg_mst_m['var_name'] = agg_mst_m[['method', 'variable', 'cat']].apply(
+        lambda x: x[0] + '_' + x[1] + '_cat_' + str(x[2]), axis=1)
+    agg_df_m_a = agg_mst_m.pivot(index=key_var, columns='var_name', values='value').reset_index()
+
+    agg_mst = _agg_df(cdr_rec, [key_var], sum_var, cnt_var, stat_var)
+    agg_mst['var_name'] = agg_mst[['method', 'variable']].apply(lambda x: x[0] + '_' + x[1] + '_cat_total_all', axis=1)
+    agg_df_a = agg_mst.pivot(index=key_var, columns='var_name', values='value').reset_index()
+
+    agg_df_a = pd.merge(agg_df_a, agg_df_m_a, on=key_var, how='left')
+
+    sig_ratio = [sig for sig in agg_df_a.columns if
+                 (('sum_' in sig) or ('cnt_' in sig)) and ('cat_total_all' not in sig)]
+    for sig in sig_ratio:
+        agg_df_a['rto_' + sig] = agg_df_a[[sig, sig.split('cat')[0] + 'cat_total_all']].apply(
+            lambda x: (x[0] + 0.0) / x[1], axis=1)
+    return (agg_df, agg_df_a)
+
+
+##############################################################################
+# TS Preparation #############################################################
+##############################################################################
+import pandas as pd
+import numpy as np
+
+
+def _to_ts(sig_df, key_var, sig_list, scaler,ts_map ={'0_14': 9, '14_28': 8, '28_42': 7, '42_56': 6, '56_70': 5, '70_84': 4, '84_98': 3, '98_112': 2,'112_126':1,'126_140':0} ,max_length=10):
+    ''' FUNCTION: categorization
+
+        INPUT:
+            sig_df: dataframe of signals
+            key_var: key name
+            sig_list: signal list
+            scaler: normalizer
+            max_length: # of time slots
+
+        OUTPUT:
+            numpy.ndarray of (# of IDs)*(# of session blocks)*(# of signals)
+    '''
+    ## Step 1. TS Mapping
+    sig_df.drop_duplicates(subset=key_var,inplace=True)
+    sig_df['userid'] = sig_df[key_var].apply(lambda x: str(x.split(':')[0]))
+    sig_df['TS'] = sig_df[key_var].apply(lambda x: ts_map.get(x.split(':')[1], -1))
+    sig_df = sig_df[(sig_df.TS >= 0)]
+    sig_df.shape
+
+    ## Step 2. TS Building
+    uid_df = pd.DataFrame({'userid': list(sig_df.userid.unique())})
+    uid_df['lk'] = 1
+    ts_df = pd.DataFrame({'TS': list(range(max_length))})
+    ts_df['lk'] = 1
+    pop_mst = pd.merge(uid_df, ts_df, on='lk', how='outer')
+
+    sig_df = pd.merge(pop_mst, sig_df, on=['userid', 'TS'], how='left')
+    for sig in sig_list:
+        if sig not in sig_df.columns:
+            sig_df[sig] = 0
+    sig_df.fillna(0, inplace=True)
+    sig_df.sort_values(['userid', 'TS'], ascending=[1, 1], inplace=True)
+        
+
+    ## Step 3. Normalization
+    sig_df.loc[:, sig_list] = scaler.transform(sig_df.loc[:, sig_list])
+
+    ## Step 4. Padding
+    print(sig_df.shape)
+    arrays = np.stack([sig_df.loc[(max_length * i):(max_length * (i + 1) -1), sig_list].values for i in
+                       range(int(sig_df.shape[0] / max_length))], axis=0)
+    id_list = [sig_df.loc[max_length * i, 'userid'] for i in range(int(sig_df.shape[0] / max_length))]
+    return (id_list, arrays)
+
+
+##############################################################################
+# RNN Scoring ################################################################
+##############################################################################
+
+from keras.models import Model
+def _rnn_scoring(mdl_rnn, ts_array, id_list):
+
+    ''' FUNCTION: rnn scoring
+
+        INPUT:
+            mdl_rnn: keras.engine.training.Model
+            ts_array: numpy.ndarray of (# of IDs)*(# of session blocks)*(# of signals)
+            id_list: list of IDs
+
+        OUTPUT:
+            Dataframe of extracted features in ID level
+    '''
+    layer_feature = Model(inputs=mdl_rnn.input, outputs=mdl_rnn.get_layer('featurelayer').output)
+    features_array = layer_feature.predict(ts_array, batch_size=1)
+    column_name = ['Feat_' + str(i + 1) for i in range(features_array.shape[1])]
+    df = pd.DataFrame(features_array, index=id_list, columns=column_name).reset_index()
+    scr = mdl_rnn.predict_proba(ts_array, batch_size=1)
+    df['risk_score'] = scr[:, 0]
+    return (df)
