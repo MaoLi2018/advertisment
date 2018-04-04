@@ -18,6 +18,14 @@ CATEGORICAL_COLS = [
     
 ]
 
+STAT_DICT = {
+    'item_id':['item_price_level', 'item_sales_level','item_collected_level', 'item_pv_level'],
+    'user_id':['user_age_level', 'user_star_level'],
+    'contest_id':['context_page_id'],
+    'shop_id':['shop_review_num_level','shop_review_positive_rate','shop_star_level','shop_score_service',
+               'shop_score_delivery','shop_score_description']
+}
+
 NUMERIC_COLS = [
     'shop_review_positive_rate','shop_score_service','shop_score_delivery','shop_score_description'
 ]
