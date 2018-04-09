@@ -32,13 +32,13 @@ NUMERIC_COLS = [
 
 IGNORE_COLS = [
     #target
-    'is_trade',
+    'is_trade','cnt_rec',
     #keys
     'instance_id','user_id','context_id',
     #time
-    'context_timestamp','day','time'
+    'context_timestamp','day','time',
     #string category
-    'item_category_list','predict_category_property','item_property_list'
+    'item_category_list','predict_category_property','item_property_list','item_property_list_clean'
     
 ]
 
