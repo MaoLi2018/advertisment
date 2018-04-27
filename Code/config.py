@@ -1,6 +1,6 @@
 
 # set the path-to-files
-TRAIN_FILE = "../../Data/advertisment/Raw/round1_ijcai_18_train_20180301.txt"
+TRAIN_FILE = "../../Data/advertisment/Raw/round2_ijcai_18_train_20180425.txt"
 TEST_FILE = "../../Data/advertisment/Raw/round2_ijcai_18_test_a_20180425.txt"
 TEST_FILE_OLD = "../../Data/advertisment/Raw/round1_ijcai_18_test_a_20180301.txt"
 TEST_FILE_NEW = "../../Data/advertisment/Raw/round1_ijcai_18_test_b_20180418.txt"
