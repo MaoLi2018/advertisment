@@ -2,8 +2,9 @@
 # set the path-to-files
 TRAIN_FILE = "../../Data/advertisment/Raw/round2_ijcai_18_train_20180425.txt"
 TEST_FILE = "../../Data/advertisment/Raw/round2_ijcai_18_test_a_20180425.txt"
-TEST_FILE_OLD = "../../Data/advertisment/Raw/round1_ijcai_18_test_a_20180301.txt"
-TEST_FILE_NEW = "../../Data/advertisment/Raw/round1_ijcai_18_test_b_20180418.txt"
+
+FEATURE_SET = "../../Data/advertisment/Raw/round2_ijcai_18_set_20180428.txt"
+FEATURE_BASE = "../../Data/advertisment/Raw/round2_ijcai_18_base_20180428.txt"
 
 SUB_DIR = "./output"
 
@@ -14,7 +15,7 @@ RANDOM_SEED = 42
 # types of columns of the dataset dataframe
 CATEGORICAL_COLS = [
     'item_id', 'item_brand_id', 'item_city_id', 'item_price_level', 'item_sales_level',
-    'item_collected_level', 'item_pv_level', 'user_gender_id', 'user_occupation_id',
+    'item_collected_level', 'item_pv_level','user_id', 'user_gender_id', 'user_occupation_id',
     'user_age_level', 'user_star_level','context_page_id', 'hour', 'shop_id', 'shop_review_num_level',
     'shop_star_level','item_category_list_bin1','item_category_list_bin2'
     
