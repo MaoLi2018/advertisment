@@ -1,1 +1,1 @@
-pre_hour_user_id
+pre_hour_item_category_list_bin2

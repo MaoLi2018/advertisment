@@ -6,6 +6,9 @@ TEST_FILE = "../../Data/advertisment/Raw/round2_ijcai_18_test_a_20180425.txt"
 FEATURE_SET = "../../Data/advertisment/Raw/round2_ijcai_18_set_20180428.txt"
 FEATURE_BASE = "../../Data/advertisment/Raw/round2_ijcai_18_base_20180428.txt"
 
+FEATURE_TEXT_SET = "../../Data/advertisment/Raw/round2_ijcai_18_textset_20180501.txt"
+FEATURE_TEXT_BASE = "../../Data/advertisment/Raw/round2_ijcai_18_textbase_20180501.txt"
+
 SUB_DIR = "./output"
 
 
